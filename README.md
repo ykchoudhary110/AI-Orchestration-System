@@ -148,5 +148,5 @@ Performance optimization
 This project demonstrates that intelligent AI orchestration can be achieved on low-resource devices using smart routing instead of heavy computation. It bridges the gap between accessibility and performance in AI systems.
 
 👨‍💻 Authors
-Your Name
+Yash Kumar Choudhary
 ⭐ If you like this project, give it a star!
