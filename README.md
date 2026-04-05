@@ -18,6 +18,8 @@ This creates barriers for:
 Students
 Low-end device users
 Offline environments
+
+
 💡 Proposed Solution
 
 We built a system that:
@@ -46,6 +48,8 @@ Top-K Matching Prompts
 Model Suggestion (Primary + Fallback)
    ↓
 Output to UI
+
+
 🧠 Methodology (Step-by-Step)
 1. Input Processing
 
@@ -69,12 +73,15 @@ Based on matched prompts, the system suggests:
 
 Primary Model (lightweight, fast)
 Fallback Model (more powerful)
+
 6. Safety Layer
 
 The system filters:
 
 Restricted requests (e.g., hacking, malware)
 Invalid tasks
+
+
 🧩 Key Features
 
 ✨ Semantic understanding (not keyword-based)
@@ -125,6 +132,8 @@ We built a simple UI using Gradio, where users:
 Enter a prompt
 Receive task detection
 Get model suggestions instantly
+
+
 🔐 Licensing Strategy
 
 We prioritized:
@@ -143,6 +152,8 @@ Real model execution (LLaMA, SD integration)
 API deployment (FastAPI)
 Voice assistant support
 Performance optimization
+
+
 🎓 Conclusion
 
 This project demonstrates that intelligent AI orchestration can be achieved on low-resource devices using smart routing instead of heavy computation. It bridges the gap between accessibility and performance in AI systems.
