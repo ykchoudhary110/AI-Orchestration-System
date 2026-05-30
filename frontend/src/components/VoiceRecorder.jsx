@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Mic, MicOff, RotateCcw, Volume2, CheckCircle2, AlertTriangle, UserCheck, AudioLines } from 'lucide-react';
 
-export default function VoiceRecorder({ expectedText, onEvaluationCompleted, studentId }) {
+export default function VoiceRecorder({ expectedText, onEvaluationCompleted, studentId, assessmentId, questionId }) {
   const [isRecording, setIsRecording] = useState(false);
   const [spokenText, setSpokenText] = useState('');
   const [recognition, setRecognition] = useState(null);
@@ -210,6 +210,8 @@ export default function VoiceRecorder({ expectedText, onEvaluationCompleted, stu
     formData.append('student_id', studentId);
     formData.append('expected_text', expectedText);
     formData.append('duration_seconds', Math.max(1.0, duration));
+    if (assessmentId) formData.append('assessment_id', assessmentId);
+    if (questionId) formData.append('question_id', questionId);
     
     try {
       const response = await fetch('http://localhost:8000/api/assessments/voice-upload-file', {

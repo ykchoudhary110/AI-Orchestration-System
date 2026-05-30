@@ -1,11 +1,18 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, Link, Navigate } from 'react-router-dom';
 import { api } from '../services/api';
 import VoiceRecorder from '../components/VoiceRecorder';
 import { BookOpen, Calculator, Play, Award, CheckCircle2, ChevronRight, AlertCircle, ArrowLeft } from 'lucide-react';
 
 export default function AssessmentSession() {
   const { studentId, subject } = useParams();
+  const userRole = localStorage.getItem('userRole');
+  const loggedInStudentId = localStorage.getItem('studentId');
+
+  if (userRole === 'Student' && studentId !== loggedInStudentId) {
+    return <Navigate to="/" replace />;
+  }
+
   const navigate = useNavigate();
   const [student, setStudent] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -51,6 +58,38 @@ export default function AssessmentSession() {
     };
   }, []);
 
+  const speakWord = () => {
+    if (!currentQuestion) return;
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(currentQuestion.correct_answer);
+      const lang = currentQuestion.language || 'English';
+      const langCodes = {
+        'English': 'en-US',
+        'Hindi': 'hi-IN',
+        'Marathi': 'mr-IN',
+        'Gujarati': 'gu-IN',
+        'Bengali': 'bn-IN',
+        'Tamil': 'ta-IN',
+        'Telugu': 'te-IN'
+      };
+      utterance.lang = langCodes[lang] || 'en-US';
+      utterance.rate = 0.85;
+      window.speechSynthesis.speak(utterance);
+    } else {
+      alert('Text-to-speech is not supported in this browser.');
+    }
+  };
+
+  useEffect(() => {
+    if (currentQuestion && (currentQuestion.question_type === 'Dictation' || currentQuestion.competency === 'dictation')) {
+      const timer = setTimeout(() => {
+        speakWord();
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [currentQuestion]);
+
   const handleStartSession = async () => {
     setLoading(true);
     try {
@@ -83,7 +122,7 @@ export default function AssessmentSession() {
         return;
       }
       studentResponse = selectedOption;
-    } else if (currentQuestion.competency === 'sentence_reading') {
+    } else if (!currentQuestion.options && currentQuestion.question_type !== 'Dictation' && currentQuestion.competency !== 'dictation' && (subject === 'literacy' || currentQuestion.competency === 'number_recognition')) {
       // Handled inside VoiceRecorder component, we just fetch written response snapshot
       if (!writtenResponse) {
         alert('Please record and evaluate the voice reading first.');
@@ -298,127 +337,117 @@ export default function AssessmentSession() {
           </span>
         </div>
 
-        {/* Check if Voice reading question */}
-        {currentQuestion.competency === 'sentence_reading' ? (
-          <div className="flex flex-col gap-5">
-            <VoiceRecorder
-              expectedText={currentQuestion.correct_answer}
-              studentId={student.id}
-              onEvaluationCompleted={handleVoiceEvaluationCompleted}
-            />
-            
-            {/* Direct manual grading backup right in the main session view */}
-            {!writtenResponse && (
-              <div className="border-t border-white/5 pt-4 mt-2 flex flex-col items-center">
-                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-2.5">
-                  Microphone Issues? Grade Oral Sentence Reading Directly:
-                </span>
-                <div className="flex gap-3">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setWrittenResponse(currentQuestion.correct_answer);
-                    }}
-                    className="bg-emerald-600/10 hover:bg-emerald-600 text-emerald-400 hover:text-white border border-emerald-500/25 px-4.5 py-2.5 rounded-xl text-xs font-bold transition active:scale-95 cursor-pointer"
-                  >
-                    ✔️ Student Read Correctly (Skip Mic)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setWrittenResponse('FAILED_ORAL_READING');
-                    }}
-                    className="bg-rose-600/10 hover:bg-rose-600 text-rose-400 hover:text-white border border-rose-500/25 px-4.5 py-2.5 rounded-xl text-xs font-bold transition active:scale-95 cursor-pointer"
-                  >
-                    ❌ Student Read Incorrectly (Skip Mic)
-                  </button>
-                </div>
-              </div>
-            )}
+        <div className="flex flex-col gap-6.5">
+          {/* Question Text */}
+          <div className="text-xl font-bold text-white leading-relaxed text-center py-4 bg-slate-950/40 rounded-2xl border border-white/5 px-6">
+            {currentQuestion.text.replace(/\[\w+\]/, '').trim()}
           </div>
-        ) : (
-          <div className="flex flex-col gap-6.5">
-            {/* Question Text */}
-            <div className="text-xl font-bold text-white leading-relaxed text-center py-4 bg-slate-950/40 rounded-2xl border border-white/5 px-6">
-              {currentQuestion.text.replace(/\[\w+\]/, '').trim()}
-            </div>
 
-            {/* Answer Selector Inputs */}
-            {currentQuestion.options ? (
-              /* Multiple Choice */
-              <div className="grid grid-cols-1 gap-3">
-                {questionOptions.map((opt, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => setSelectedOption(opt)}
-                    className={`text-left p-4.5 rounded-xl border text-sm font-semibold transition active:scale-99 cursor-pointer ${
-                      selectedOption === opt
-                        ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-600/15'
-                        : 'bg-slate-900/50 border-white/5 hover:border-white/10 text-slate-300 hover:text-white'
-                    }`}
-                  >
-                    <span className="inline-block bg-slate-800 text-slate-400 text-xs font-bold w-6 h-6 rounded-md text-center leading-6 mr-3">
-                      {String.fromCharCode(65 + idx)}
-                    </span>
-                    {opt}
-                  </button>
-                ))}
-              </div>
-            ) : (subject === 'literacy' || currentQuestion.competency === 'number_recognition') ? (
-              /* Teacher Grading for Oral Questions (Phonics, Word Reading, Number Recognition, etc.) */
-              <div className="flex flex-col items-center bg-slate-950/40 border border-white/5 rounded-2xl p-5">
-                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-3">
-                  Teacher Oral Grading (No typing required)
-                </span>
-                <div className="flex gap-4 w-full">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setWrittenResponse(currentQuestion.correct_answer);
-                      setSelectedOption(currentQuestion.correct_answer);
-                    }}
-                    className={`flex-1 py-4.5 rounded-xl border text-sm font-bold transition active:scale-95 cursor-pointer flex items-center justify-center gap-2 ${
-                      writtenResponse === currentQuestion.correct_answer
-                        ? 'bg-emerald-600 border-emerald-500 text-white shadow-lg shadow-emerald-600/15'
-                        : 'bg-emerald-600/10 border-emerald-500/25 text-emerald-400 hover:bg-emerald-600 hover:text-white'
-                    }`}
-                  >
-                    ✔️ Read Correctly
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setWrittenResponse('FAILED_ORAL_READING');
-                      setSelectedOption('FAILED_ORAL_READING');
-                    }}
-                    className={`flex-1 py-4.5 rounded-xl border text-sm font-bold transition active:scale-95 cursor-pointer flex items-center justify-center gap-2 ${
-                      writtenResponse === 'FAILED_ORAL_READING'
-                        ? 'bg-rose-600 border-rose-500 text-white shadow-lg shadow-rose-600/15'
-                        : 'bg-rose-600/10 border-rose-500/25 text-rose-400 hover:bg-rose-600 hover:text-white'
-                    }`}
-                  >
-                    ❌ Read Incorrectly
-                  </button>
-                </div>
-              </div>
-            ) : (
-              /* Standard Numeracy Written Text Input (expected answer is a standard English number) */
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Write response below:</label>
+          {/* Answer Selector Inputs */}
+          {currentQuestion.options ? (
+            /* Multiple Choice */
+            <div className="grid grid-cols-1 gap-3">
+              {questionOptions.map((opt, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setSelectedOption(opt)}
+                  className={`text-left p-4.5 rounded-xl border text-sm font-semibold transition active:scale-99 cursor-pointer ${
+                    selectedOption === opt
+                      ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-600/15'
+                      : 'bg-slate-900/50 border-white/5 hover:border-white/10 text-slate-300 hover:text-white'
+                  }`}
+                >
+                  <span className="inline-block bg-slate-800 text-slate-400 text-xs font-bold w-6 h-6 rounded-md text-center leading-6 mr-3">
+                    {String.fromCharCode(65 + idx)}
+                  </span>
+                  {opt}
+                </button>
+              ))}
+            </div>
+          ) : (currentQuestion.question_type === 'Dictation' || currentQuestion.competency === 'dictation') ? (
+            /* Dictation: Hear word and type the spelling */
+            <div className="flex flex-col items-center gap-5">
+              <button
+                type="button"
+                onClick={speakWord}
+                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-extrabold px-6 py-4 rounded-2xl active:scale-95 transition-all cursor-pointer shadow-lg shadow-blue-600/20 text-lg border-0"
+              >
+                <Play className="h-6 w-6 fill-white" />
+                Hear Word / शब्द सुनें
+              </button>
+              
+              <div className="w-full flex flex-col gap-1.5 mt-2">
+                <label className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Type the word you hear / जो शब्द सुना उसे टाइप करें:</label>
                 <input
                   type="text"
                   value={writtenResponse}
                   onChange={(e) => setWrittenResponse(e.target.value)}
-                  placeholder="Type student response here..."
-                  className="w-full bg-slate-950 border border-white/5 text-slate-200 text-base font-bold px-4.5 py-3.5 rounded-xl focus:border-blue-500/30 focus:outline-none transition-all"
+                  placeholder="Type spelling here..."
+                  autoFocus
+                  className="w-full bg-slate-950 border border-white/5 text-slate-200 text-center text-xl font-bold px-4.5 py-4 rounded-xl focus:border-blue-500/30 focus:outline-none transition-all"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') handleNextQuestion();
                   }}
                 />
               </div>
-            )}
-          </div>
-        )}
+            </div>
+          ) : (subject === 'literacy' || currentQuestion.competency === 'number_recognition') ? (
+            /* Speech Recognition & Pronunciation Evaluation (Self-Service) */
+            <div className="flex flex-col gap-5">
+              <VoiceRecorder
+                expectedText={currentQuestion.correct_answer}
+                studentId={student.id}
+                assessmentId={assessmentId}
+                questionId={currentQuestion.id}
+                onEvaluationCompleted={handleVoiceEvaluationCompleted}
+              />
+              
+              {/* Direct manual grading backup right in the main session view */}
+              {!writtenResponse && (
+                <div className="border-t border-white/5 pt-4 mt-2 flex flex-col items-center">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-2.5">
+                    Microphone Issues? Grade Oral Response Directly:
+                  </span>
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setWrittenResponse(currentQuestion.correct_answer);
+                      }}
+                      className="bg-emerald-600/10 hover:bg-emerald-600 text-emerald-400 hover:text-white border border-emerald-500/25 px-4.5 py-2.5 rounded-xl text-xs font-bold transition active:scale-95 cursor-pointer border-0"
+                    >
+                      ✔️ Student Read Correctly (Skip Mic)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setWrittenResponse('FAILED_ORAL_READING');
+                      }}
+                      className="bg-rose-600/10 hover:bg-rose-600 text-rose-400 hover:text-white border border-rose-500/25 px-4.5 py-2.5 rounded-xl text-xs font-bold transition active:scale-95 cursor-pointer border-0"
+                    >
+                      ❌ Student Read Incorrectly (Skip Mic)
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            /* Standard Numeracy Written Text Input (expected answer is a standard English number) */
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Write response below:</label>
+              <input
+                type="text"
+                value={writtenResponse}
+                onChange={(e) => setWrittenResponse(e.target.value)}
+                placeholder="Type student response here..."
+                className="w-full bg-slate-950 border border-white/5 text-slate-200 text-base font-bold px-4.5 py-3.5 rounded-xl focus:border-blue-500/30 focus:outline-none transition-all"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleNextQuestion();
+                }}
+              />
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Footer Navigation Action bar */}

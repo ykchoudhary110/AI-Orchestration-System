@@ -280,3 +280,34 @@ nav.sticky .bg-white\/10 {
   border-color: rgba(255, 255, 255, 0.1) !important;
   color: #ffffff !important;
 }
+
+/* Custom Navbar Role Dropdown styling */
+.role-select {
+  background-color: rgba(255, 255, 255, 0.15) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  padding: 0.25rem 1.75rem 0.25rem 0.5rem !important;
+  border-radius: 0.5rem !important;
+  font-weight: 700 !important;
+  font-size: 0.75rem !important;
+  text-transform: uppercase !important;
+  cursor: pointer !important;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e") !important;
+  background-position: right 0.35rem center !important;
+  background-repeat: no-repeat !important;
+  background-size: 1.1em 1.1em !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+}
+
+.role-select:focus {
+  border-color: #f97316 !important; /* Orange accent on focus */
+  box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.2) !important;
+}
+
+.role-select option {
+  background-color: #003366 !important;
+  color: #ffffff !important;
+}
+

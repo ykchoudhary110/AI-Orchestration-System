@@ -1,17 +1,24 @@
 # FLN Compass - Installation & Running Guide
 
-This guide details the step-by-step instructions to set up and run the **FLN Compass** system on any Windows, macOS, or Linux device.
+This guide details the step-by-step instructions to set up and run the **FLN Compass** system on Windows, macOS, or Linux devices.
 
 ---
 
 ## 🏗️ System Overview
-FLN Compass is an **Offline-First Foundational Literacy & Numeracy (FLN) Intelligence System** that helps teachers diagnose student reading/math gaps, log performance, and receive AI classroom recommendations.
+FLN Compass is an **Offline-First Foundational Literacy & Numeracy (FLN) Diagnostic Intelligence System** designed to help educators track student reading/math gaps, evaluate speech/pronunciation metrics, and generate customized remediation plans locally.
 
-*   **Frontend**: React (Vite, Tailwind CSS, Recharts)
-*   **Backend**: FastAPI (Python)
-*   **Local Database**: SQLite
-*   **Offline speech-to-text**: Python `faster-whisper` (runs completely locally on CPU)
-*   **Local LLM recommendations**: LM Studio (Gemma 3 4B)
+### Key Features & Upgrades:
+*   **Gateway Access & Security Validation**: Strict client-side route guards and login gateway validation.
+    *   **Enforced Login**: Quick-bypass role buttons are removed. Users must log in via the formal gateway using their respective credentials.
+    *   **Navbar Switcher Lock**: Students are restricted from switching roles via the navbar top-bar. If logged in as a student, the selector is hidden and a static read-only `Student` label is displayed to prevent privilege escalation.
+*   **Dictation Literacy Module**: The Literacy assessment has been streamlined to `["dictation", "sentence_reading", "comprehension"]`, removing letter recognition and phonics.
+    *   *Dictation*: Native offline-first Web Speech Synthesis (`window.speechSynthesis`) reads words aloud, and students type the spelling to check their literacy skills.
+    *   *Sentence Reading*: Students read sentences aloud for speech-to-text evaluation.
+    *   *Comprehension*: Standard reading understanding MCQ checks.
+*   **Bulk Student CSV Import**: Upload a CSV file matching the structure: `Name,Age,Grade,Gender,Language`. Duplicates and conflicts are automatically checked.
+*   **Phonetic Pronunciation Evaluation**: Evaluates reading speed (WPM), accuracy, and pronunciation using local Whisper speech-to-text.
+*   **Local Audio Playback**: Spoken recordings are saved locally at `backend/static/audio/` and served via HTTP for teacher review.
+*   **AI Question Generator**: Generate custom literacy and numeracy questions in multiple languages using local Gemma 3 4B.
 
 ---
 
@@ -19,14 +26,14 @@ FLN Compass is an **Offline-First Foundational Literacy & Numeracy (FLN) Intelli
 Ensure you have the following installed on your machine:
 1.  **Python 3.10 or 3.11** (Ensure it is added to your system PATH).
 2.  **Node.js (v18 or higher)**.
-3.  **LM Studio** (Optional, for offline Gemma 3 4B recommendations).
+3.  **LM Studio** (Optional, for local AI recommendations and question generation).
 
 ---
 
-## 🚀 Installation Steps
+## 🚀 Installation & Running Steps
 
 ### Step 1: Set up the Python Backend
-1.  Open your command terminal and navigate to the project directory:
+1.  Open your command terminal and navigate to the `backend` directory:
     ```bash
     cd backend
     ```
@@ -47,14 +54,16 @@ Ensure you have the following installed on your machine:
         ```bash
         source .venv/bin/activate
         ```
-4.  Upgrade pip:
+4.  Upgrade pip and install backend dependencies:
     ```bash
     python -m pip install --upgrade pip
-    ```
-5.  Install all backend dependencies:
-    ```bash
     pip install fastapi uvicorn sqlalchemy pydantic requests pydantic-settings python-multipart faster-whisper
     ```
+5.  Run the Uvicorn server:
+    ```bash
+    uvicorn main:app --host 127.0.0.1 --port 8000 --reload
+    ```
+    *The SQLite database (`fln_compass.db`) will automatically initialize and seed with multilingual dictation questions, schools, teachers, and mock student longitudinal logs.*
 
 > [!NOTE]
 > The very first time a student reads a sentence, the backend will download the tiny (70MB) Whisper model weights from Hugging Face and cache them locally under your home directory. Subsequent transcriptions run 100% offline.
@@ -67,33 +76,38 @@ Ensure you have the following installed on your machine:
     cd frontend
     ```
 2.  Install the required packages:
-    ```bash
-    npm install
-    ```
+    *   **macOS / Linux / Windows CMD**:
+        ```bash
+        npm install
+        ```
+    *   **Windows (PowerShell with script restrictions)**:
+        If you encounter script execution restrictions while using PowerShell, run:
+        ```powershell
+        npm.cmd install
+        ```
+3.  Start the Vite dev server:
+    *   **macOS / Linux / Windows CMD**:
+        ```bash
+        npm run dev -- --host 127.0.0.1
+        ```
+    *   **Windows (PowerShell)**:
+        ```powershell
+        npm.cmd run dev -- --host 127.0.0.1
+        ```
+4.  Open your browser and navigate to **`http://localhost:5173/`**.
 
 ---
 
-## 🏃 Running the Application
+## 🔑 Demonstration Credentials
+To test the systems, use the following credentials on the login screen:
 
-### 1. Run the Backend Server
-1.  Navigate to the project root directory.
-2.  Activate the python virtual environment:
-    ```bash
-    .venv\Scripts\activate
-    ```
-3.  Run the Uvicorn server:
-    ```bash
-    uvicorn backend.main:app --host 127.0.0.1 --port 8000 --reload
-    ```
-    *The database (`fln_compass.db`) will be auto-seeded with mock student profiles and a diagnostic question bank on launch.*
+| Role | Email / Login ID | Password |
+|---|---|---|
+| **Admin** | `admin@fln.gov.in` | `admin123` |
+| **Teacher** | `teacher@fln.gov.in` | `teacher123` |
+| **Student** | Registered ID (e.g., `STU-1`, `STU-2`) | `student123` |
 
-### 2. Run the Frontend Dev Server
-1.  Navigate to the `frontend` directory.
-2.  Start the Vite dev server:
-    ```bash
-    npm run dev -- --host 127.0.0.1
-    ```
-3.  Open your browser and navigate to **`http://localhost:5173/`**.
+*Note: Available student login IDs are listed directly on the login screen for reference.*
 
 ---
 
@@ -103,4 +117,4 @@ For offline classroom recommendations and student reports, you can run a local L
 2.  Search and download a small LLM like **Gemma 3 4B** or **Llama 3 8B**.
 3.  Go to the **Local Server** tab in LM Studio.
 4.  Select your downloaded LLM model and click **Start Server** on port `1234`.
-5.  *Fallback behavior:* If LM Studio is not running, the system automatically uses a built-in deterministic rule-based mapping (consisting of 33 pedagogical rules) to generate recommendations instantly.
+5.  *Fallback behavior:* If LM Studio is not running, the system automatically uses a built-in deterministic rule-based mapping to generate recommendations and fallback questions.

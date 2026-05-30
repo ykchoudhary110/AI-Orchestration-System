@@ -1,6 +1,6 @@
 import requests
 import json
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 
 LM_STUDIO_URL = "http://localhost:1234/v1/chat/completions"
 
@@ -296,3 +296,267 @@ def generate_class_summary_ai(grade: int, stats: Dict[str, Any]) -> str:
         "Track weekly attendance and re-assess high-risk students in 4 weeks."
     )
     return fallback_summary
+
+
+# ==========================================
+# AI Question Generator Logic
+# ==========================================
+
+def generate_question_ai(subject: str, competency: str, difficulty: int, grade_level: int, language: str) -> Dict[str, Any]:
+    """
+    Generates a realistic, educational FLN question matching criteria using Gemma 3 4B (LM Studio).
+    Falls back to a structured rule-based generator if LM Studio is offline.
+    """
+    system_prompt = (
+        "You are an expert Foundational Literacy & Numeracy (FLN) question developer. "
+        "Your task is to generate a single, highly educational and age-appropriate question.\n"
+        "Respond ONLY with a valid JSON object matching this exact schema:\n"
+        "{\n"
+        "  \"text\": \"Question text or story passage to show. Avoid tongue twisters.\",\n"
+        "  \"options\": [\"Option 1\", \"Option 2\", \"Option 3\"], // Exactly 3 options as a list of strings, or null/empty list if it is a reading/short answer question\n"
+        "  \"correct_answer\": \"The exact correct answer value matching the options or expected text\"\n"
+        "}\n"
+        "Return ONLY the JSON text. Do not include markdown wraps or explanations."
+    )
+    
+    user_prompt = (
+        f"Generate a single question for:\n"
+        f"Subject: {subject}\n"
+        f"Competency: {competency}\n"
+        f"Difficulty Level: {difficulty} (scale 1 to 5)\n"
+        f"Grade Level: {grade_level}\n"
+        f"Language: {language}\n"
+        "Make sure it is simple, educational, and clear."
+    )
+
+    gpt_response = get_recommendation_from_api(system_prompt, user_prompt)
+    if gpt_response:
+        try:
+            clean_json = gpt_response.replace("```json", "").replace("```", "").strip()
+            parsed = json.loads(clean_json)
+            if "text" in parsed and "correct_answer" in parsed:
+                # Ensure options format is correct
+                options_val = None
+                if parsed.get("options"):
+                    options_val = json.dumps(parsed["options"])
+                
+                return {
+                    "text": parsed["text"],
+                    "options": options_val,
+                    "correct_answer": parsed["correct_answer"],
+                    "subject": subject,
+                    "competency": competency,
+                    "difficulty": difficulty,
+                    "grade_level": grade_level,
+                    "language": language,
+                    "question_type": "MCQ" if options_val else "Dictation" if competency == "dictation" else "Reading" if subject == "literacy" else "Numeracy"
+                }
+        except Exception as e:
+            print(f"[AI Question Gen] Failed to parse Gemma response: {e}. Using fallback.")
+
+    # Fallback offline generator
+    return generate_question_fallback(subject, competency, difficulty, grade_level, language)
+
+
+def generate_question_fallback(subject: str, competency: str, difficulty: int, grade_level: int, language: str) -> Dict[str, Any]:
+    """Generates a structured, age-appropriate fallback question offline."""
+    # Literacy Fallbacks
+    if subject.lower() == "literacy":
+        if competency == "dictation":
+            words = {
+                "English": ["cat", "apple", "garden", "mountain", "celebration"],
+                "Hindi": ["कल", "कमल", "सूरज", "दरवाजा", "विद्यालय"],
+                "Marathi": ["घर", "झाड", "शाळा", "दरवाजा", "पुस्तकालय"],
+                "Gujarati": ["ઘર", "ઝાડ", "શાળા", "દરવાજો", "પુસ્તકાલય"],
+                "Bengali": ["ঘর", "আম", "বই", "বিদ্যালয়", "লাইব্রেরি"],
+                "Tamil": ["பல்", "மரம்", "பள்ளி", "ஆசிரியர்", "புத்தகம்"],
+                "Telugu": ["కల", "బడి", "పువ్వు", "ఉపాధ్యాయుడు", "పుస్తకం"]
+            }
+            lang_pool = words.get(language, words["English"])
+            word = lang_pool[min(difficulty - 1, len(lang_pool) - 1)]
+            
+            text = "Listen and type the word you hear: [Dictation]"
+            if language == "Hindi":
+                text = "सुनें और जो शब्द आप सुन रहे हैं उसे टाइप करें: [Dictation]"
+            elif language == "Marathi":
+                text = "ऐका आणि तुम्ही ऐकत असलेला शब्द टाईप करा: [Dictation]"
+            elif language == "Gujarati":
+                text = "સાંભળો અને જે શબ્દ તમે સાંભળો છો તે લખો: [Dictation]"
+            elif language == "Bengali":
+                text = "শুনুন এবং যে শব্দটি আপনি শুনছেন তা টাইপ করুন: [Dictation]"
+            elif language == "Tamil":
+                text = "கேட்டு, நீங்கள் கேட்கும் வார்த்தையைத் தட்டச்சு செய்யவும்: [Dictation]"
+            elif language == "Telugu":
+                text = "విని, మీరు వినే పదాన్ని టైప్ చేయండి: [Dictation]"
+                
+            return {
+                "text": text,
+                "options": None,
+                "correct_answer": word,
+                "subject": "literacy",
+                "competency": competency,
+                "difficulty": difficulty,
+                "grade_level": grade_level,
+                "language": language,
+                "question_type": "Dictation"
+            }
+            
+        elif competency == "sentence_reading":
+            sentences = {
+                "English": [
+                    "The cat sat.",
+                    "The boy is playing.",
+                    "We go to school every morning.",
+                    "Rainy days are perfect for reading stories.",
+                    "Foundational learning builds the pathway to success."
+                ],
+                "Hindi": [
+                    "घर चल।",
+                    "राम फल खा।",
+                    "हम रोज पाठशाला जाते हैं।",
+                    "बरसात के मौसम में मोर नाचता है।",
+                    "प्राथमिक शिक्षा ही उज्जवल भविष्य की नींव मजबूत करती है।"
+                ],
+                "Marathi": [
+                    "घरी चल.",
+                    "राम आंबा खा.",
+                    "आम्ही रोज शाळेत जातो.",
+                    "पावसाळ्यात मोर नाचतो.",
+                    "प्राथमिक शिक्षण ही उज्ज्वल भविष्याची पायाभरणी आहे."
+                ]
+            }
+            lang_pool = sentences.get(language, sentences["English"])
+            sentence = lang_pool[min(difficulty - 1, len(lang_pool) - 1)]
+            
+            prompt = f"Read this sentence aloud: {sentence}" if language == "English" else f"इस वाक्य को ज़ोर से पढ़ें: {sentence}"
+            return {
+                "text": prompt,
+                "options": None,
+                "correct_answer": sentence,
+                "subject": "literacy",
+                "competency": competency,
+                "difficulty": difficulty,
+                "grade_level": grade_level,
+                "language": language,
+                "question_type": "Reading"
+            }
+            
+        else: # comprehension
+            if language == "English":
+                return {
+                    "text": "Story: Priya has a little white dog named Spot. Spot likes to run in the park. Question: What is the dog's name?",
+                    "options": json.dumps(["Spot", "Priya", "White"]),
+                    "correct_answer": "Spot",
+                    "subject": "literacy",
+                    "competency": competency,
+                    "difficulty": difficulty,
+                    "grade_level": grade_level,
+                    "language": language,
+                    "question_type": "MCQ"
+                }
+            else:
+                return {
+                    "text": "कहानी: राहुल के पास एक सफ़ेद कुत्ता है जिसका नाम टॉमी है। टॉमी को पार्क में दौड़ना पसंद है। प्रश्न: कुत्ते का नाम क्या है?",
+                    "options": json.dumps(["टॉमी", "राहुल", "सफ़ेद"]),
+                    "correct_answer": "टॉमी",
+                    "subject": "literacy",
+                    "competency": competency,
+                    "difficulty": difficulty,
+                    "grade_level": grade_level,
+                    "language": language,
+                    "question_type": "MCQ"
+                }
+
+    # Numeracy Fallbacks
+    else:
+        if competency == "number_recognition":
+            nums = ["8", "18", "73", "409", "5162"]
+            num = nums[min(difficulty - 1, len(nums) - 1)]
+            return {
+                "text": f"Read the number: {num}",
+                "options": None,
+                "correct_answer": num,
+                "subject": "numeracy",
+                "competency": competency,
+                "difficulty": difficulty,
+                "grade_level": grade_level,
+                "language": language,
+                "question_type": "Numeracy"
+            }
+        elif competency == "counting":
+            dots = "●" * (difficulty * 2)
+            ans = str(difficulty * 2)
+            opts = [str(difficulty * 2 - 1), ans, str(difficulty * 2 + 1)]
+            return {
+                "text": f"Count the dots: {dots}",
+                "options": json.dumps(opts),
+                "correct_answer": ans,
+                "subject": "numeracy",
+                "competency": competency,
+                "difficulty": difficulty,
+                "grade_level": grade_level,
+                "language": language,
+                "question_type": "MCQ"
+            }
+        elif competency == "number_sense":
+            ans = str(difficulty * 10)
+            opts = [str(difficulty * 10 - 5), ans, str(difficulty * 10 + 5)]
+            return {
+                "text": f"What number comes next: {difficulty*10 - 2}, {difficulty*10 - 1}, _ ?",
+                "options": json.dumps(opts),
+                "correct_answer": ans,
+                "subject": "numeracy",
+                "competency": competency,
+                "difficulty": difficulty,
+                "grade_level": grade_level,
+                "language": language,
+                "question_type": "MCQ"
+            }
+        elif competency == "addition":
+            n1 = difficulty * 3
+            n2 = difficulty * 2
+            ans = str(n1 + n2)
+            opts = [str(n1 + n2 - 1), ans, str(n1 + n2 + 1)]
+            return {
+                "text": f"Solve: {n1} + {n2} = ?",
+                "options": json.dumps(opts),
+                "correct_answer": ans,
+                "subject": "numeracy",
+                "competency": competency,
+                "difficulty": difficulty,
+                "grade_level": grade_level,
+                "language": language,
+                "question_type": "MCQ"
+            }
+        elif competency == "subtraction":
+            n1 = difficulty * 5
+            n2 = difficulty * 2
+            ans = str(n1 - n2)
+            opts = [str(n1 - n2 - 1), ans, str(n1 - n2 + 1)]
+            return {
+                "text": f"Solve: {n1} - {n2} = ?",
+                "options": json.dumps(opts),
+                "correct_answer": ans,
+                "subject": "numeracy",
+                "competency": competency,
+                "difficulty": difficulty,
+                "grade_level": grade_level,
+                "language": language,
+                "question_type": "MCQ"
+            }
+        else: # multiplication
+            n1 = difficulty + 1
+            n2 = difficulty
+            ans = str(n1 * n2)
+            opts = [str(n1 * n2 - n2), ans, str(n1 * n2 + n2)]
+            return {
+                "text": f"Solve: {n1} x {n2} = ?",
+                "options": json.dumps(opts),
+                "correct_answer": ans,
+                "subject": "numeracy",
+                "competency": competency,
+                "difficulty": difficulty,
+                "grade_level": grade_level,
+                "language": language,
+                "question_type": "MCQ"
+            }

@@ -33,9 +33,15 @@ export default function MetricCard({
       iconBg: 'bg-emerald-600/15 text-emerald-400',
       glow: 'shadow-emerald-500/5',
     },
+    orange: {
+      bg: 'from-orange-600/10 to-orange-500/5',
+      border: 'border-orange-500/10',
+      iconBg: 'bg-orange-600/15 text-orange-400',
+      glow: 'shadow-orange-500/5',
+    },
   };
 
-  const theme = colorClasses[color];
+  const theme = colorClasses[color] || colorClasses.blue;
 
   if (loading) {
     return (

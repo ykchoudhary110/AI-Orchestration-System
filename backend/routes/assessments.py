@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 import os
 import requests
 from datetime import datetime
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from backend.database import get_db
 from backend.models.schemas import (
     Student, Question, Assessment, QuestionResponse, CompetencyScore,
@@ -65,23 +65,33 @@ def next_question(req: AdaptiveNextRequest, db: Session = Depends(get_db)):
     if not question:
         raise HTTPException(status_code=404, detail="Previous question not found")
 
-    # Check correctness
-    # Ignore case and trailing spaces
-    expected = question.correct_answer.strip().lower()
-    received = req.student_response.strip().lower()
-    
-    # For multiple choice, check if they sent Option index or option content
-    is_correct = (received == expected)
+    # Check if a QuestionResponse was already recorded (e.g., via voice upload)
+    response = db.query(QuestionResponse).filter(
+        QuestionResponse.assessment_id == req.assessment_id,
+        QuestionResponse.question_id == req.last_question_id
+    ).first()
 
-    # Record the response
-    response = QuestionResponse(
-        assessment_id=req.assessment_id,
-        question_id=req.last_question_id,
-        student_response=req.student_response,
-        is_correct=is_correct,
-        response_time_seconds=req.response_time_seconds
-    )
-    db.add(response)
+    if response:
+        if req.response_time_seconds > 0:
+            response.response_time_seconds = req.response_time_seconds
+        db.add(response)
+    else:
+        # Check correctness
+        # Ignore case and trailing spaces
+        expected = question.correct_answer.strip().lower()
+        received = req.student_response.strip().lower()
+        is_correct = (received == expected)
+
+        # Record the response
+        response = QuestionResponse(
+            assessment_id=req.assessment_id,
+            question_id=req.last_question_id,
+            student_response=req.student_response,
+            is_correct=is_correct,
+            response_time_seconds=req.response_time_seconds
+        )
+        db.add(response)
+
     db.commit()
 
     # Determine next question
@@ -321,28 +331,31 @@ async def voice_upload_file(
     expected_text: str = Form(...),
     duration_seconds: float = Form(...),
     file: UploadFile = File(...),
+    assessment_id: Optional[int] = Form(None),
+    question_id: Optional[int] = Form(None),
     db: Session = Depends(get_db)
 ):
     student = db.query(Student).filter(Student.id == student_id).first()
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
 
-    # Save the file temporarily
+    # Save the file permanently in static/audio
     backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    temp_dir = os.path.join(backend_dir, "temp")
-    os.makedirs(temp_dir, exist_ok=True)
+    audio_dir = os.path.join(backend_dir, "static", "audio")
+    os.makedirs(audio_dir, exist_ok=True)
     
-    # Save with a clean extension (like wav or webm depending on MIME)
     ext = file.filename.split('.')[-1] if '.' in file.filename else 'wav'
-    temp_file_path = os.path.join(temp_dir, f"temp_{student_id}_{int(datetime.utcnow().timestamp())}.{ext}")
+    timestamp = int(datetime.utcnow().timestamp())
+    filename = f"student_{student_id}_q_{question_id or 0}_{timestamp}.{ext}"
+    saved_file_path = os.path.join(audio_dir, filename)
 
     try:
         content = await file.read()
-        with open(temp_file_path, "wb") as f:
+        with open(saved_file_path, "wb") as f:
             f.write(content)
     except Exception as e:
         print(f"[Audio Save Error] {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to save temporary audio file: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to save audio file: {e}")
 
     transcribed_text = ""
     transcription_source = "Local Python Whisper"
@@ -354,20 +367,13 @@ async def voice_upload_file(
             print("[Whisper] Model not pre-loaded. Attempting to load now...")
             whisper_model = WhisperModel("tiny", device="cpu", compute_type="float32")
         
-        segments, info = whisper_model.transcribe(temp_file_path, beam_size=5)
+        segments, info = whisper_model.transcribe(saved_file_path, beam_size=5)
         transcribed_text = "".join([segment.text for segment in segments]).strip()
         print(f"[Audio Transcription] Successfully transcribed offline: {transcribed_text}")
     except Exception as e:
         print(f"[Audio Transcription Failed] Local Whisper failed: {e}. Prompting manual grade.")
         transcription_source = "Offline (Failed to connect to Local Whisper)"
         transcribed_text = "FAILED_LOCAL_TRANSCRIPTION"
-
-    # Clean up file
-    try:
-        if os.path.exists(temp_file_path):
-            os.remove(temp_file_path)
-    except Exception as e:
-        print(f"[Audio Cleanup Error] Failed to delete temp file: {e}")
 
     if transcribed_text == "FAILED_LOCAL_TRANSCRIPTION":
         # Return fallback error results so the frontend knows to unlock manual evaluation
@@ -379,6 +385,8 @@ async def voice_upload_file(
             "skipped_words": expected_text.split(),
             "wrong_words": [],
             "reading_fluency": 0.0,
+            "pronunciation_score": 0.0,
+            "audio_url": f"/static/audio/{filename}",
             "transcription_source": "Offline (Failed to connect to Local Whisper)"
         }
 
@@ -412,6 +420,42 @@ async def voice_upload_file(
         score=fluency_score
     )
     db.add(prog)
+
+    # Update the assessment response record if assessment_id and question_id are provided
+    audio_relative_url = f"/static/audio/{filename}"
+    if assessment_id and question_id:
+        response_rec = db.query(QuestionResponse).filter(
+            QuestionResponse.assessment_id == assessment_id,
+            QuestionResponse.question_id == question_id
+        ).first()
+        if response_rec:
+            response_rec.audio_url = audio_relative_url
+            response_rec.accuracy_score = result["accuracy"]
+            response_rec.pronunciation_score = result["pronunciation_score"]
+            response_rec.fluency_score = fluency_score
+            response_rec.wpm = result["words_per_minute"]
+            response_rec.skipped_words = json.dumps(result["skipped_words"])
+            response_rec.wrong_words = json.dumps(result["wrong_words"])
+            response_rec.is_correct = (result["accuracy"] >= 60.0)
+            response_rec.student_response = transcribed_text
+            db.add(response_rec)
+        else:
+            response_rec = QuestionResponse(
+                assessment_id=assessment_id,
+                question_id=question_id,
+                audio_url=audio_relative_url,
+                accuracy_score=result["accuracy"],
+                pronunciation_score=result["pronunciation_score"],
+                fluency_score=fluency_score,
+                wpm=result["words_per_minute"],
+                skipped_words=json.dumps(result["skipped_words"]),
+                wrong_words=json.dumps(result["wrong_words"]),
+                is_correct=(result["accuracy"] >= 60.0),
+                student_response=transcribed_text,
+                response_time_seconds=int(duration_seconds)
+            )
+            db.add(response_rec)
+
     db.commit()
 
     return {
@@ -422,5 +466,8 @@ async def voice_upload_file(
         "skipped_words": result["skipped_words"],
         "wrong_words": result["wrong_words"],
         "reading_fluency": result["reading_fluency"],
+        "pronunciation_score": result["pronunciation_score"],
+        "audio_url": audio_relative_url,
         "transcription_source": transcription_source
     }
+

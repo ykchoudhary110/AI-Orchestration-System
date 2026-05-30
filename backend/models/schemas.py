@@ -9,6 +9,27 @@ from backend.database import Base
 # SQLAlchemy Database Models
 # ==========================================
 
+class School(Base):
+    __tablename__ = "schools"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False, unique=True)
+    location = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class Teacher(Base):
+    __tablename__ = "teachers"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    email = Column(String, nullable=True)
+    school_id = Column(Integer, ForeignKey("schools.id"), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    school = relationship("School")
+
+
 class Student(Base):
     __tablename__ = "students"
 
@@ -20,6 +41,13 @@ class Student(Base):
     language = Column(String, nullable=False) # English, Hindi, Marathi, etc.
     school = Column(String, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+    # Optional FK links
+    school_id = Column(Integer, ForeignKey("schools.id"), nullable=True)
+    teacher_id = Column(Integer, ForeignKey("teachers.id"), nullable=True)
+
+    school_rel = relationship("School")
+    teacher_rel = relationship("Teacher")
 
     assessments = relationship("Assessment", back_populates="student", cascade="all, delete-orphan")
     competency_scores = relationship("CompetencyScore", back_populates="student", cascade="all, delete-orphan")
@@ -41,6 +69,12 @@ class Question(Base):
     options = Column(Text, nullable=True) # JSON string of options if multiple choice, e.g. ["A", "B", "C"]
     correct_answer = Column(String, nullable=False) # The correct option or text match
     media_url = Column(String, nullable=True) # For audio files or pictures if needed
+
+    # Expanded columns
+    language = Column(String, nullable=False, default="English") # English, Hindi, Marathi, Gujarati, Bengali, Tamil, Telugu
+    question_type = Column(String, nullable=False, default="MCQ") # MCQ, Reading, Listening, Voice Response, Numeracy, Matching
+    is_active = Column(Boolean, default=True, nullable=False)
+    is_teacher_created = Column(Boolean, default=False, nullable=False)
 
 
 class Assessment(Base):
@@ -66,6 +100,15 @@ class QuestionResponse(Base):
     student_response = Column(String, nullable=True)
     is_correct = Column(Boolean, nullable=False)
     response_time_seconds = Column(Integer, default=0)
+
+    # Expanded details for voice recording/pronunciation evaluation
+    audio_url = Column(String, nullable=True)
+    accuracy_score = Column(Float, nullable=True)
+    pronunciation_score = Column(Float, nullable=True)
+    fluency_score = Column(Float, nullable=True)
+    wpm = Column(Float, nullable=True)
+    skipped_words = Column(Text, nullable=True) # JSON string
+    wrong_words = Column(Text, nullable=True) # JSON string
 
     assessment = relationship("Assessment", back_populates="responses")
     question = relationship("Question")
@@ -137,6 +180,35 @@ class Recommendation(Base):
 # Pydantic Schemas for Serialization
 # ==========================================
 
+class SchoolBase(BaseModel):
+    name: str
+    location: Optional[str] = None
+
+class SchoolCreate(SchoolBase):
+    pass
+
+class SchoolResponse(SchoolBase):
+    id: int
+    class Config:
+        orm_mode = True
+        from_attributes = True
+
+
+class TeacherBase(BaseModel):
+    name: str
+    email: Optional[str] = None
+    school_id: Optional[int] = None
+
+class TeacherCreate(TeacherBase):
+    pass
+
+class TeacherResponse(TeacherBase):
+    id: int
+    class Config:
+        orm_mode = True
+        from_attributes = True
+
+
 class StudentBase(BaseModel):
     name: str
     age: int
@@ -144,6 +216,8 @@ class StudentBase(BaseModel):
     gender: str
     language: str
     school: str
+    school_id: Optional[int] = None
+    teacher_id: Optional[int] = None
 
 class StudentCreate(StudentBase):
     pass
@@ -155,6 +229,8 @@ class StudentUpdate(BaseModel):
     gender: Optional[str] = None
     language: Optional[str] = None
     school: Optional[str] = None
+    school_id: Optional[int] = None
+    teacher_id: Optional[int] = None
 
 class CompetencyScoreSchema(BaseModel):
     competency: str
@@ -162,6 +238,7 @@ class CompetencyScoreSchema(BaseModel):
     updated_at: datetime
     class Config:
         orm_mode = True
+        from_attributes = True
 
 class LearningGapSchema(BaseModel):
     expected_grade: float
@@ -170,12 +247,14 @@ class LearningGapSchema(BaseModel):
     updated_at: datetime
     class Config:
         orm_mode = True
+        from_attributes = True
 
 class RiskLevelSchema(BaseModel):
     risk_level: str
     updated_at: datetime
     class Config:
         orm_mode = True
+        from_attributes = True
 
 class StudentResponse(StudentBase):
     id: int
@@ -198,9 +277,27 @@ class QuestionBase(BaseModel):
     options: Optional[str] = None
     correct_answer: str
     media_url: Optional[str] = None
+    language: Optional[str] = "English"
+    question_type: Optional[str] = "MCQ"
+    is_active: Optional[bool] = True
+    is_teacher_created: Optional[bool] = False
 
 class QuestionCreate(QuestionBase):
     pass
+
+class QuestionUpdate(BaseModel):
+    subject: Optional[str] = None
+    competency: Optional[str] = None
+    difficulty: Optional[int] = None
+    grade_level: Optional[int] = None
+    text: Optional[str] = None
+    options: Optional[str] = None
+    correct_answer: Optional[str] = None
+    media_url: Optional[str] = None
+    language: Optional[str] = None
+    question_type: Optional[str] = None
+    is_active: Optional[bool] = None
+    is_teacher_created: Optional[bool] = None
 
 class QuestionResponseSchema(QuestionBase):
     id: int
@@ -251,3 +348,4 @@ class VoiceEvaluationResponse(BaseModel):
     skipped_words: List[str]
     wrong_words: List[str]
     reading_fluency: float
+    pronunciation_score: Optional[float] = 0.0

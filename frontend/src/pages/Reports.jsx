@@ -1,8 +1,13 @@
 import React, { useEffect, useState } from 'react';
+import { Navigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { FileText, Users, Printer, BookOpen, Brain, Download, HelpCircle, ShieldAlert, Award, FileSpreadsheet } from 'lucide-react';
 
 export default function Reports() {
+  const userRole = localStorage.getItem('userRole');
+  if (userRole === 'Student') {
+    return <Navigate to="/" replace />;
+  }
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   

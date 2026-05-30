@@ -1,9 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import { UserPlus, Search, Filter, BookOpen, Calculator, ChevronRight, GraduationCap } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 
 export default function StudentList() {
+  const userRole = localStorage.getItem('userRole');
+  if (userRole === 'Student') {
+    return <Navigate to="/" replace />;
+  }
+
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -166,6 +171,9 @@ export default function StudentList() {
                     <h3 className="text-lg font-bold text-white tracking-tight mt-0.5 group-hover:text-blue-400 transition-colors">
                       {s.name}
                     </h3>
+                    <span className="text-[10px] font-black uppercase text-orange-600 bg-orange-50 px-2 py-0.5 rounded border border-orange-100 mt-1.5 self-start">
+                      Login Code: STU-{s.id}
+                    </span>
                   </div>
                   <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded border ${getRiskBadgeColor(s.risk_level?.risk_level)}`}>
                     {s.risk_level?.risk_level || 'LOW'} RISK
