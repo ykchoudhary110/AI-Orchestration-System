@@ -114,7 +114,7 @@ To test the systems, use the following credentials on the login screen:
 ## 🤖 Configuring Local AI (LM Studio Integration)
 For offline classroom recommendations and student reports, you can run a local LLM:
 1.  Open **LM Studio**.
-2.  Search and download a small LLM like **Gemma 3 4B** or **Llama 3 8B**.
+2.  Search and download a small LLM like **Gemma 3 4B** also **whisper-large-v3-turbo-gguf** on LM Studio in model search and download it too  .
 3.  Go to the **Local Server** tab in LM Studio.
 4.  Select your downloaded LLM model and click **Start Server** on port `1234`.
 5.  *Fallback behavior:* If LM Studio is not running, the system automatically uses a built-in deterministic rule-based mapping to generate recommendations and fallback questions.
