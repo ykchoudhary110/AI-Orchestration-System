@@ -26,7 +26,7 @@ FLN Compass is an **Offline-First Foundational Literacy & Numeracy (FLN) Diagnos
 Ensure you have the following installed on your machine:
 1.  **Python 3.10 or 3.11** (Ensure it is added to your system PATH).
 2.  **Node.js (v18 or higher)**.
-3.  **LM Studio** (Optional, for local AI recommendations and question generation).
+3.  **LM Studio** (For local AI recommendations and question generation).
 
 ---
 
