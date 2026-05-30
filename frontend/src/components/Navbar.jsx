@@ -137,6 +137,15 @@ export default function Navbar() {
             <span className="text-xs font-black text-emerald-400 bg-emerald-500/10 px-2.5 py-1.5 rounded-xl border border-emerald-500/20">
               Student
             </span>
+          ) : userRole === 'Teacher' ? (
+            <select
+              value={userRole}
+              onChange={handleRoleChange}
+              className="role-select"
+            >
+              <option value="Teacher">Teacher</option>
+              <option value="Student">Student</option>
+            </select>
           ) : (
             <select
               value={userRole}
