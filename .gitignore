@@ -1,0 +1,49 @@
+# Python / Backend virtual environment and caches
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+env/
+ENV/
+backend/temp/
+backend/fln_compass.db
+*.db
+
+# Frontend dependencies and build output
+node_modules/
+dist/
+build/
+.eslintcache
+.vite-cache/
+
+# IDE / Editor configurations
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+
+# Environment secrets
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# AI Agent / Autopilot files (removes trace of AI tools)
+task.md
+implementation_plan.md
+walkthrough.md
+.gemini/
+brain/
+scratch/
+user_inputs.txt
+read_logs.py
+verify_whisper.py
+*.log
+*.log.*
+.system_generated/
