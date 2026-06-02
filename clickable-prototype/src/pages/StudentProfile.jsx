@@ -394,7 +394,7 @@ export default function StudentProfile() {
                                 {/* Audio Control */}
                                 <div className="flex items-center gap-3">
                                   <Music className="h-4.5 w-4.5 text-slate-400" />
-                                  <audio src={`http://localhost:8000${r.audio_url}`} controls className="flex-1 h-8 rounded" />
+                                  <audio src={r.audio_url?.startsWith('blob:') ? r.audio_url : `http://localhost:8000${r.audio_url}`} controls className="flex-1 h-8 rounded" />
                                 </div>
 
                                 {/* Alignment highlights */}

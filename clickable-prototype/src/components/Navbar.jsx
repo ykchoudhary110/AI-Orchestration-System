@@ -10,36 +10,9 @@ export default function Navbar() {
   const [userRole, setUserRole] = useState(localStorage.getItem('userRole') || '');
 
   useEffect(() => {
-    // Probe backend connection
-    const checkStatus = async () => {
-      try {
-        const res = await axios.get('http://localhost:8000/');
-        if (res.data.status === 'online') {
-          setBackendStatus('online');
-          // Check if LM Studio is reachable
-          try {
-            const lmRes = await axios.post('http://localhost:1234/v1/chat/completions', {
-              model: 'gemma-3-4b',
-              messages: [{ role: 'user', content: 'test' }],
-              max_tokens: 1
-            }, { timeout: 1000 });
-            if (lmRes.status === 200) {
-              setAiMode('Gemma 3 4B (Local)');
-            } else {
-              setAiMode('Local Fallback (Rule-Based)');
-            }
-          } catch {
-            setAiMode('Local Fallback (Rule-Based)');
-          }
-        }
-      } catch {
-        setBackendStatus('offline');
-        setAiMode('Offline');
-      }
-    };
-    checkStatus();
-    const interval = setInterval(checkStatus, 15000);
-    return () => clearInterval(interval);
+    // Simulated offline connection status for judges
+    setBackendStatus('online');
+    setAiMode('Gemma 3 (Simulated)');
   }, []);
 
   const handleRoleChange = (e) => {

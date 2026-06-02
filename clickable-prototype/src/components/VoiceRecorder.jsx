@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Mic, MicOff, RotateCcw, Volume2, CheckCircle2, AlertTriangle, UserCheck, AudioLines } from 'lucide-react';
+import { api } from '../services/api';
 
 export default function VoiceRecorder({ expectedText, onEvaluationCompleted, studentId, assessmentId, questionId }) {
   const [isRecording, setIsRecording] = useState(false);
@@ -203,34 +204,21 @@ export default function VoiceRecorder({ expectedText, onEvaluationCompleted, stu
     setLoading(true);
     setErrorMsg('');
     const duration = startTime ? (Date.now() - startTime) / 1000.0 : 5.0;
-
-    // Build form data with audio binary
-    const formData = new FormData();
-    formData.append('file', audioBlob, 'student_reading.webm');
-    formData.append('student_id', studentId);
-    formData.append('expected_text', expectedText);
-    formData.append('duration_seconds', Math.max(1.0, duration));
-    if (assessmentId) formData.append('assessment_id', assessmentId);
-    if (questionId) formData.append('question_id', questionId);
     
     try {
-      const response = await fetch('http://localhost:8000/api/assessments/voice-upload-file', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!response.ok) throw new Error('Local Whisper endpoint request failed');
-      const data = await response.json();
+      const data = await api.uploadVoiceFile(
+        studentId,
+        expectedText,
+        Math.max(1.0, duration),
+        audioBlob,
+        assessmentId,
+        questionId
+      );
       
-      if (data.transcription_source.includes('Failed')) {
-        setErrorMsg('Local Whisper transcription failed. Please try again, or use Teacher Oral Grading below.');
-        setEvalResult(null);
-      } else {
-        setEvalResult(data);
-        setSpokenText(data.spoken_text);
-        if (onEvaluationCompleted) {
-          onEvaluationCompleted(data);
-        }
+      setEvalResult(data);
+      setSpokenText(data.spoken_text);
+      if (onEvaluationCompleted) {
+        onEvaluationCompleted(data);
       }
     } catch (err) {
       console.error(err);

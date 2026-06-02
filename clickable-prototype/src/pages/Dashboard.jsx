@@ -6,7 +6,8 @@ import {
   Users, AlertCircle, BarChart3, Clock, ArrowRight, ShieldAlert, 
   Play, BookOpen, Calculator, Upload, Plus, Trash2, CheckCircle2, 
   RefreshCw, Volume2, Sparkles, Languages, Check, X, FileSpreadsheet, 
-  Building2, HelpCircle, Activity, Trophy, Mic, GraduationCap 
+  Building2, HelpCircle, Activity, Trophy, Mic, GraduationCap,
+  Info, ExternalLink, ChevronDown, ChevronUp
 } from 'lucide-react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, 
@@ -18,6 +19,7 @@ import { Link, useNavigate } from 'react-router-dom';
 export default function Dashboard() {
   const navigate = useNavigate();
   const [userRole, setUserRole] = useState(localStorage.getItem('userRole') || '');
+  const [infoOpen, setInfoOpen] = useState(false);
   
   // Shared States
   const [loading, setLoading] = useState(true);
@@ -1240,7 +1242,7 @@ export default function Dashboard() {
                   <div className="bg-white border border-slate-200 p-4 rounded-xl space-y-3">
                     <div>
                       <h4 className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Spoken Audio Playback</h4>
-                      <audio src={`http://localhost:8000${voicePracticeResponse.audio_url}`} controls className="w-full mt-2 h-9" />
+                      <audio src={voicePracticeResponse.audio_url?.startsWith('blob:') ? voicePracticeResponse.audio_url : `http://localhost:8000${voicePracticeResponse.audio_url}`} controls className="w-full mt-2 h-9" />
                     </div>
 
                     <div>
@@ -1293,6 +1295,118 @@ export default function Dashboard() {
     );
   }
 
+  const renderPrototypeInfoPanel = () => {
+    return (
+      <div className="lg:sticky lg:top-6 lg:col-span-1 w-full">
+        {/* Desktop View: Sticky Card */}
+        <div className="hidden lg:block glass-panel border border-[#cbd5e1] rounded-3xl p-5 shadow-xl bg-gradient-to-b from-blue-50/20 to-transparent text-left">
+          <h3 className="text-sm font-black uppercase text-[#003366] tracking-wider mb-4 flex items-center gap-2">
+            <Info className="h-4.5 w-4.5 text-[#003366]" />
+            Prototype Information
+          </h3>
+          <p className="text-xs text-slate-600 font-semibold leading-relaxed mb-4">
+            FLN Compass is designed as a fully offline-first Foundational Literacy and Numeracy Intelligence System.
+          </p>
+          <p className="text-xs text-slate-600 font-semibold leading-relaxed mb-4">
+            This prototype is a frontend-only demonstration created for evaluation and user experience testing.
+          </p>
+          <p className="text-xs text-slate-600 font-semibold leading-relaxed mb-6">
+            The production version operates completely offline using local AI models, speech processing, and local data storage. Backend services, speech recognition, learning analytics engines, and AI recommendation systems are intentionally simulated in this prototype version.
+          </p>
+          
+          <div className="space-y-3">
+            <a 
+              href="https://github.com/ykchoudhary110/AI-Orchestration-System" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="w-full flex items-center justify-between py-2.5 px-4 bg-[#003366] text-white rounded-xl text-xs font-bold transition hover:scale-[1.02] active:scale-95 shadow-md text-center"
+            >
+              GitHub Repository
+              <ExternalLink className="h-3.5 w-3.5" />
+            </a>
+            <a 
+              href="https://github.com/ykchoudhary110/AI-Orchestration-System#documentation" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="w-full flex items-center justify-between py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition hover:scale-[1.02] active:scale-95 border border-slate-300"
+            >
+              Documentation
+              <ExternalLink className="h-3.5 w-3.5" />
+            </a>
+            <a 
+              href="https://github.com/ykchoudhary110/AI-Orchestration-System#architecture" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="w-full flex items-center justify-between py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition hover:scale-[1.02] active:scale-95 border border-slate-300"
+            >
+              Architecture
+              <ExternalLink className="h-3.5 w-3.5" />
+            </a>
+          </div>
+        </div>
+
+        {/* Mobile View: Collapsible Card */}
+        <div className="lg:hidden glass-panel border border-[#cbd5e1] rounded-3xl p-4 shadow-md bg-gradient-to-b from-blue-50/20 to-transparent text-left">
+          <button 
+            type="button"
+            onClick={() => setInfoOpen(!infoOpen)}
+            className="w-full flex justify-between items-center text-xs font-black uppercase text-[#003366] tracking-wider cursor-pointer border-0 bg-transparent py-1"
+          >
+            <span className="flex items-center gap-2">
+              <Info className="h-4.5 w-4.5 text-[#003366]" />
+              Prototype Information
+            </span>
+            {infoOpen ? <ChevronUp className="h-4.5 w-4.5" /> : <ChevronDown className="h-4.5 w-4.5" />}
+          </button>
+          
+          {infoOpen && (
+            <div className="mt-4 pt-3 border-t border-slate-200 animate-in fade-in slide-in-from-top-2 duration-200">
+              <p className="text-xs text-slate-600 font-semibold leading-relaxed mb-3">
+                FLN Compass is designed as a fully offline-first Foundational Literacy and Numeracy Intelligence System.
+              </p>
+              <p className="text-xs text-slate-600 font-semibold leading-relaxed mb-3">
+                This prototype is a frontend-only demonstration created for evaluation and user experience testing.
+              </p>
+              <p className="text-xs text-slate-600 font-semibold leading-relaxed mb-4">
+                The production version operates completely offline using local AI models, speech processing, and local data storage. Backend services, speech recognition, learning analytics engines, and AI recommendation systems are intentionally simulated in this prototype version.
+              </p>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <a 
+                  href="https://github.com/ykchoudhary110/AI-Orchestration-System" 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="flex items-center justify-center gap-1.5 py-2 px-3 bg-[#003366] text-white rounded-xl text-[11px] font-bold shadow-sm"
+                >
+                  GitHub Repository
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+                <a 
+                  href="https://github.com/ykchoudhary110/AI-Orchestration-System#documentation" 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="flex items-center justify-center gap-1.5 py-2 px-3 bg-slate-100 text-slate-700 rounded-xl text-[11px] font-bold border border-slate-300"
+                >
+                  Documentation
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+                <a 
+                  href="https://github.com/ykchoudhary110/AI-Orchestration-System#architecture" 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="flex items-center justify-center gap-1.5 py-2 px-3 bg-slate-100 text-slate-700 rounded-xl text-[11px] font-bold border border-slate-300"
+                >
+                  Architecture
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="container mx-auto px-6 pb-12">
       {/* Title */}
@@ -1307,9 +1421,14 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {userRole === 'Admin' && renderAdminDashboard()}
-      {userRole === 'Teacher' && renderTeacherDashboard()}
-      {userRole === 'Student' && renderStudentDashboard()}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 items-start">
+        <div className="lg:col-span-3 space-y-8">
+          {userRole === 'Admin' && renderAdminDashboard()}
+          {userRole === 'Teacher' && renderTeacherDashboard()}
+          {userRole === 'Student' && renderStudentDashboard()}
+        </div>
+        {renderPrototypeInfoPanel()}
+      </div>
     </div>
   );
 }
