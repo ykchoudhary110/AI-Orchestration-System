@@ -1207,12 +1207,11 @@ export default function Dashboard() {
 
               {/* Microphone Voice Recording Zone */}
               <div className="flex flex-col items-center justify-center p-4 border border-slate-200 rounded-2xl mb-6 bg-slate-50/30">
-                <VoiceRecorder onRecordingComplete={handlePracticeVoiceUpload} />
-                {voicePracticeLoading && (
-                  <p className="text-xs text-slate-500 font-bold animate-pulse mt-4 flex items-center gap-1.5">
-                    <RefreshCw className="h-4.5 w-4.5 animate-spin" /> Evaluating speech pronunciation phonetics...
-                  </p>
-                )}
+                <VoiceRecorder 
+                  studentId={studentProfile.id} 
+                  expectedText={voicePracticeText} 
+                  onEvaluationCompleted={(data) => setVoicePracticeResponse(data)} 
+                />
               </div>
 
               {/* Practice evaluation reports */}
