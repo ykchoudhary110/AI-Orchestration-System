@@ -165,59 +165,59 @@ export default function Login() {
 
           {/* Credentials Helper Card */}
           <div className="mt-8 pt-6 border-t border-slate-200">
-            <h3 className="text-xs font-black text-slate-700 uppercase tracking-wider mb-3 flex items-center gap-2">
+            <h3 className="text-xs font-black text-[#003366] uppercase tracking-wider mb-3 flex items-center gap-2">
               <Shield className="h-4.5 w-4.5 text-blue-600" />
               Demo Credentials Info
             </h3>
             
-            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4.5 space-y-3.5 text-xs text-slate-600 font-semibold">
-              <div className="flex justify-between items-start border-b border-slate-200/60 pb-2">
+            <div className="bg-slate-100/75 border border-slate-350 rounded-2xl p-4.5 space-y-3.5 text-xs text-slate-800 font-semibold">
+              <div className="flex justify-between items-center border-b border-slate-300/60 pb-2.5">
                 <div>
-                  <span className="block font-black text-slate-800 uppercase tracking-wide text-[10px]">Admin Account</span>
-                  <span className="font-mono text-slate-500 text-[11px]">admin@fln.gov.in</span>
+                  <span className="block font-black text-slate-900 uppercase tracking-wide text-[10px]">Admin Account</span>
+                  <span className="font-mono text-slate-700 text-xs font-bold">admin@fln.gov.in</span>
                 </div>
-                <span className="bg-slate-200/80 px-2.5 py-0.5 rounded-lg font-mono text-[10px] text-slate-700 font-bold">admin123</span>
+                <span className="bg-white border border-slate-300 px-2.5 py-1 rounded-lg font-mono text-xs text-slate-950 font-black shadow-sm">admin123</span>
               </div>
 
-              <div className="flex justify-between items-start border-b border-slate-200/60 pb-2">
+              <div className="flex justify-between items-center border-b border-slate-300/60 pb-2.5">
                 <div>
-                  <span className="block font-black text-slate-800 uppercase tracking-wide text-[10px]">Teacher Account</span>
-                  <span className="font-mono text-slate-500 text-[11px]">teacher@fln.gov.in</span>
+                  <span className="block font-black text-slate-900 uppercase tracking-wide text-[10px]">Teacher Account</span>
+                  <span className="font-mono text-slate-700 text-xs font-bold">teacher@fln.gov.in</span>
                 </div>
-                <span className="bg-slate-200/80 px-2.5 py-0.5 rounded-lg font-mono text-[10px] text-slate-700 font-bold">teacher123</span>
+                <span className="bg-white border border-slate-300 px-2.5 py-1 rounded-lg font-mono text-xs text-slate-950 font-black shadow-sm">teacher123</span>
               </div>
 
               <div>
-                <span className="block font-black text-slate-800 uppercase tracking-wide text-[10px] mb-1">Student Accounts (Reference Only)</span>
-                <p className="text-[10px] text-slate-400 font-bold mb-2">
-                  Enter student login code below (e.g. STU-1) with password <code className="bg-slate-100 px-1 py-0.5 rounded text-slate-600 font-bold">student123</code>:
+                <span className="block font-black text-slate-900 uppercase tracking-wide text-[10px] mb-1">Student Accounts (Reference Only)</span>
+                <p className="text-[10px] text-slate-600 font-bold mb-2">
+                  Enter student login code below (e.g. STU-1) with password <code className="bg-white border border-slate-200 px-1.5 py-0.5 rounded text-slate-850 font-extrabold">student123</code>:
                 </p>
                 
                 <div className="max-h-[140px] overflow-y-auto pr-1 space-y-2 mt-2">
                   {loadingStudents ? (
-                    <p className="text-[10px] text-slate-400 font-bold text-center animate-pulse flex items-center justify-center gap-1">
+                    <p className="text-[10px] text-slate-500 font-bold text-center animate-pulse flex items-center justify-center gap-1">
                       <RefreshCw className="h-3 w-3 animate-spin" /> Querying registered database student IDs...
                     </p>
                   ) : students.length === 0 ? (
-                    <p className="text-[10px] text-slate-400 font-bold text-center">
+                    <p className="text-[10px] text-slate-500 font-bold text-center">
                       No students in database. Create one via Admin/Teacher first.
                     </p>
                   ) : (
                     students.map((student) => (
                       <div
                         key={student.id}
-                        className="flex items-center justify-between p-2.5 bg-white border border-slate-200 rounded-xl"
+                        className="flex items-center justify-between p-2.5 bg-white border border-slate-250 rounded-xl shadow-sm"
                       >
                         <div className="flex items-center gap-2">
-                          <div className="p-1 bg-emerald-50 border border-emerald-100 text-emerald-600 rounded-lg">
+                          <div className="p-1.5 bg-emerald-50 border border-emerald-250 text-emerald-700 rounded-lg">
                             <User className="h-3.5 w-3.5" />
                           </div>
                           <div>
-                            <span className="text-[11px] font-bold text-slate-700 block">{student.name}</span>
-                            <span className="text-[9px] text-slate-400 font-semibold">Grade {student.grade} | {student.school}</span>
+                            <span className="text-[11px] font-black text-slate-900 block">{student.name}</span>
+                            <span className="text-[9px] text-slate-500 font-bold">Grade {student.grade} | {student.school}</span>
                           </div>
                         </div>
-                        <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded">
+                        <span className="text-[10px] font-black text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded">
                           STU-{student.id}
                         </span>
                       </div>
