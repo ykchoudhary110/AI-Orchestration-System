@@ -61,7 +61,7 @@ export default function MetricCard({
         <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
           {title}
         </span>
-        <span className="text-3xl font-extrabold text-white tracking-tight">
+        <span className="text-3xl font-extrabold text-[#0f172a] tracking-tight">
           {value}
         </span>
         {subtext && (
