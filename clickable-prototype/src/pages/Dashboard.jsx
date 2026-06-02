@@ -1334,7 +1334,7 @@ export default function Dashboard() {
               <ExternalLink className="h-3.5 w-3.5" />
             </a>
             <a 
-              href="https://github.com/ykchoudhary110/AI-Orchestration-System#architecture" 
+              href="https://github.com/ykchoudhary110/AI-Orchestration-System/blob/prototype-deployment/FLN%20Architecture.png" 
               target="_blank" 
               rel="noopener noreferrer" 
               className="w-full flex items-center justify-between py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition hover:scale-[1.02] active:scale-95 border border-slate-300"
@@ -1391,7 +1391,7 @@ export default function Dashboard() {
                   <ExternalLink className="h-3 w-3" />
                 </a>
                 <a 
-                  href="https://github.com/ykchoudhary110/AI-Orchestration-System#architecture" 
+                  href="https://github.com/ykchoudhary110/AI-Orchestration-System/blob/prototype-deployment/FLN%20Architecture.png" 
                   target="_blank" 
                   rel="noopener noreferrer" 
                   className="flex items-center justify-center gap-1.5 py-2 px-3 bg-slate-100 text-slate-700 rounded-xl text-[11px] font-bold border border-slate-300"
